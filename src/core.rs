@@ -69,6 +69,7 @@ where
     ///
     /// let spanner = Spanner::from_writer(Vec::new()).with_config(Config::new().with_skip(3));
     /// ```
+    #[must_use]
     pub fn with_config(self, cfg: Config) -> Self {
         Self {
             writer: self.writer,
@@ -83,6 +84,7 @@ pub type VecSpanner = Spanner<Vec<u8>>;
 
 impl VecSpanner {
     /// Creates a `VecSpanner` instance with default values.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -98,6 +100,7 @@ impl VecSpanner {
     ///
     /// let spanner = VecSpanner::from_vec(Vec::new());
     /// ```
+    #[must_use]
     pub fn from_vec(vec: Vec<u8>) -> Self {
         Self {
             writer: Mutex::new(vec),
@@ -133,6 +136,7 @@ impl FileSpanner {
     /// let file = std::fs::File::create("output.txt").unwrap();
     /// let spanner = FileSpanner::new(file);
     /// ```
+    #[must_use]
     pub fn new(file: std::fs::File) -> Self {
         Self {
             writer: Mutex::new(file),
@@ -147,6 +151,7 @@ pub type StdoutSpanner = Spanner<std::io::Stdout>;
 
 impl StdoutSpanner {
     /// Creates a `StdoutSpanner` instance with default values.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -222,7 +227,7 @@ where
                     acc.push(' ');
                 }
                 for _ in 0..cfg.tabwidth.saturating_sub(1) {
-                    acc.push(' ')
+                    acc.push(' ');
                 }
                 acc
             },

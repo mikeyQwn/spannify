@@ -21,6 +21,7 @@ impl Config {
     /// - `tabwidth`: 2
     /// - `skip`: 2
     /// - `depthmap`: A function that cycles through `['|', '¦', '┆', '┊']`
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -41,6 +42,7 @@ where
     ///
     /// let config = Config::new().with_depthmap(|depth| if depth % 2 == 0 { '|' } else { '¦' });
     /// ```
+    #[must_use]
     pub fn with_depthmap<U: Fn(usize) -> char>(self, depthmap: U) -> Config<U> {
         Config {
             tabwidth: self.tabwidth,
@@ -60,6 +62,7 @@ where
     ///
     /// let config = Config::new().with_skip(4);
     /// ```
+    #[must_use]
     pub fn with_skip(self, skip: usize) -> Self {
         Self {
             tabwidth: self.tabwidth,
