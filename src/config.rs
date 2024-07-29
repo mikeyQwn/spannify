@@ -1,5 +1,7 @@
 //! Configuration for span generators
 
+use crate::level::Level;
+
 /// Config that determines the ouput of the span generator
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Config<T = fn(usize) -> char>
@@ -12,6 +14,9 @@ where
     pub skip: usize,
     /// Function that maps the depth of a span to a vertical bar character.
     pub depthmap: T,
+    /// Determines the minumum level for the spans. Spans with level below the `level` are
+    /// ignored. Deafult is `Level::Info`
+    pub level: Level,
 }
 
 impl Config {
@@ -48,6 +53,7 @@ where
             tabwidth: self.tabwidth,
             skip: self.skip,
             depthmap,
+            level: self.level,
         }
     }
 
@@ -64,11 +70,23 @@ where
     /// ```
     #[must_use]
     pub fn with_skip(self, skip: usize) -> Self {
-        Self {
-            tabwidth: self.tabwidth,
-            skip,
-            depthmap: self.depthmap,
-        }
+        Self { skip, ..self }
+    }
+
+    /// Replaces the level value.
+    ///
+    /// # Parameters
+    /// - `level`: The new minimum level for the spans.
+    ///
+    /// # Examples
+    /// ```
+    /// use spannify::config::Config;
+    ///
+    /// let config = Config::new().with_skip(4);
+    /// ```
+    #[must_use]
+    pub fn with_level(self, level: Level) -> Self {
+        Self { level, ..self }
     }
 }
 
@@ -78,6 +96,7 @@ impl Default for Config {
             tabwidth: 2,
             skip: 2,
             depthmap: default_depthmap,
+            level: Level::Info,
         }
     }
 }
