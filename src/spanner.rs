@@ -1,10 +1,12 @@
 use core::cell::RefCell;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub struct Spanner<T>
 where
     T: std::io::Write,
 {
     writer: RefCell<T>,
+    depth: AtomicUsize,
 }
 
 impl<T> Spanner<T>
@@ -14,6 +16,7 @@ where
     pub fn from_writer(writer: T) -> Self {
         Self {
             writer: RefCell::new(writer),
+            depth: AtomicUsize::new(0),
         }
     }
 
@@ -32,6 +35,7 @@ impl VecSpanner {
     pub fn from_vec(vec: Vec<u8>) -> Self {
         Self {
             writer: RefCell::new(vec),
+            depth: AtomicUsize::new(0),
         }
     }
 }
@@ -40,6 +44,7 @@ impl Default for VecSpanner {
     fn default() -> Self {
         Self {
             writer: RefCell::new(Vec::new()),
+            depth: AtomicUsize::new(0),
         }
     }
 }
@@ -50,6 +55,7 @@ impl FileSpanner {
     pub fn new(file: std::fs::File) -> Self {
         Self {
             writer: RefCell::new(file),
+            depth: AtomicUsize::new(0),
         }
     }
 }
@@ -66,6 +72,7 @@ impl Default for StdoutSpanner {
     fn default() -> Self {
         Self {
             writer: RefCell::new(std::io::stdout()),
+            depth: AtomicUsize::new(0),
         }
     }
 }
@@ -83,7 +90,8 @@ where
     T: std::io::Write,
 {
     pub fn enter(parent: &'a Spanner<T>, name: &str) -> Self {
-        let (enter_message, drop_message) = Self::generate_messages(name);
+        let prev_depth = parent.depth.fetch_add(1, Ordering::Relaxed);
+        let (enter_message, drop_message) = Self::generate_messages(name, prev_depth);
 
         let _ = parent.writer.borrow_mut().write(enter_message.as_ref());
         Self {
@@ -92,9 +100,10 @@ where
         }
     }
 
-    fn generate_messages(name: &str) -> (String, String) {
-        let enter_message = format!("{} entered\n", name);
-        let drop_message = format!("{} dropped\n", name);
+    fn generate_messages(name: &str, depth: usize) -> (String, String) {
+        let spaces: String = (0..depth).map(|_| ' ').collect();
+        let enter_message = format!("{}{} entered\n", spaces, name);
+        let drop_message = format!("{}{} dropped\n", spaces, name);
         (enter_message, drop_message)
     }
 }
@@ -104,6 +113,7 @@ where
     T: std::io::Write,
 {
     fn drop(&mut self) {
+        let _ = self.parent.depth.fetch_sub(1, Ordering::Relaxed);
         let _ = self
             .parent
             .writer
@@ -139,16 +149,16 @@ mod tests {
         };
 
         let expected = r#"Span(0) entered
-Span(1) entered
-Span(2) entered
-Span(3) entered
-Span(4) entered
-Span(5) entered
-Span(5) dropped
-Span(4) dropped
-Span(3) dropped
-Span(2) dropped
-Span(1) dropped
+ Span(1) entered
+  Span(2) entered
+   Span(3) entered
+    Span(4) entered
+     Span(5) entered
+     Span(5) dropped
+    Span(4) dropped
+   Span(3) dropped
+  Span(2) dropped
+ Span(1) dropped
 Span(0) dropped
 "#;
 
