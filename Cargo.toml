@@ -1,6 +1,12 @@
 [package]
 name = "spanner"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
+description = "A crate that produces nice-looking graphs to visualize your callstack."
+license = "MIT"
+license-file = "LICENSE"
+documentation = "https://docs.rs/spanner"
+homepage = "https://github.com/mikeyQwn/spanner"
+repository = "https://github.com/mikeyQwn/spanner"
 
 [dependencies]
