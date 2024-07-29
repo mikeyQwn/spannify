@@ -1,11 +1,11 @@
 [package]
-name = "spanner"
+name = "spannify"
 version = "0.0.1"
 edition = "2021"
 description = "A crate that produces nice-looking graphs to visualize your callstack."
 license-file = "LICENSE"
-documentation = "https://docs.rs/spanner"
-homepage = "https://github.com/mikeyQwn/spanner"
-repository = "https://github.com/mikeyQwn/spanner"
+documentation = "https://docs.rs/spannify"
+homepage = "https://github.com/mikeyQwn/spannify"
+repository = "https://github.com/mikeyQwn/spannify"
 
 [dependencies]

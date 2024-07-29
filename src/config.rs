@@ -37,7 +37,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use spanner::config::Config;
+    /// use spannify::config::Config;
     ///
     /// let config = Config::new().with_depthmap(|depth| if depth % 2 == 0 { '|' } else { '¦' });
     /// ```
@@ -56,7 +56,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use spanner::config::Config;
+    /// use spannify::config::Config;
     ///
     /// let config = Config::new().with_skip(4);
     /// ```

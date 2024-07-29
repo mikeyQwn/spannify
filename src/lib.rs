@@ -1,4 +1,4 @@
-//! # Spanner
+//! # Spannify
 //!
 //! This crate provides functionality to produce nice-looking graphs that represent your
 //! callstack. It is designed to help developers trace and understand the execution flow of their
@@ -21,7 +21,7 @@
 //! ## Example
 //!
 //! ```rust
-//!  use spanner::core::StdoutSpanner;
+//!  use spannify::core::StdoutSpanner;
 //!
 //!  fn fib(s: &StdoutSpanner, x: usize) -> usize {
 //!      let _span = s.enter_span(format!("fib({})", x).as_ref());
@@ -66,18 +66,18 @@
 //!
 //! ## Usage
 //!
-//! To use this crate, you typically start by creating a `Spanner` instance with a desired writer
+//! To use this crate, you typically start by creating a `spannify` instance with a desired writer
 //! and configuration. Then, you create spans by calling the `Span::enter` method, which tracks the
 //! entry and exit points of different sections of your code.
 //!
 //! ```rust
-//! use spanner::{config::Config, core::{StdoutSpanner}};
+//! use spannify::{config::Config, core::{StdoutSpanner}};
 //! use std::io::stdout;
 //!
 //! // Create a configuration
 //! let config = Config::default();
 //!
-//! // Create a spanner
+//! // Create a spannify
 //! let spanner = StdoutSpanner::new().with_config(config);
 //!
 //! // Create a span
@@ -95,14 +95,14 @@
 //! formatting. You can create a custom configuration by modifying the default values.
 //!
 //! ```rust
-//! use spanner::config::Config;
+//! use spannify::config::Config;
 //!
 //! let mut config = Config::default();
 //! config.tabwidth = 4;
 //! config.skip = 2;
 //! config.depthmap = |depth| if depth % 2 == 0 { '|' } else { '^' };
 //!
-//! // Use this configuration when creating a Spanner
+//! // Use this configuration when creating a spannify
 //! ```
 //!
 //! ## License
@@ -113,7 +113,7 @@
 //!
 //! Contributions are welcome! Please open an issue or submit a pull request
 
-#![doc(html_root_url = "https://docs.rs/spanner/latest")]
+#![doc(html_root_url = "https://docs.rs/spannify/latest")]
 
 pub mod config;
 pub mod core;

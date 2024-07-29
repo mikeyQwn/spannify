@@ -30,7 +30,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use spanner::core::Spanner;
+    /// use spannify::core::Spanner;
     ///
     /// let spanner = Spanner::from_writer(Vec::new());
     /// ```
@@ -49,7 +49,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use spanner::core::Spanner;
+    /// use spannify::core::Spanner;
     ///
     /// let spanner = Spanner::from_writer(Vec::new());
     /// let span = spanner.enter_span("test");
@@ -65,7 +65,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use spanner::{config::Config, core::Spanner};
+    /// use spannify::{config::Config, core::Spanner};
     ///
     /// let spanner = Spanner::from_writer(Vec::new()).with_config(Config::new().with_skip(3));
     /// ```
@@ -94,7 +94,7 @@ impl VecSpanner {
     ///
     /// # Examples
     /// ```
-    /// use spanner::core::VecSpanner;
+    /// use spannify::core::VecSpanner;
     ///
     /// let spanner = VecSpanner::from_vec(Vec::new());
     /// ```
@@ -128,7 +128,7 @@ impl FileSpanner {
     ///
     /// # Examples
     /// ```
-    /// use spanner::core::FileSpanner;
+    /// use spannify::core::FileSpanner;
     ///
     /// let file = std::fs::File::create("output.txt").unwrap();
     /// let spanner = FileSpanner::new(file);
