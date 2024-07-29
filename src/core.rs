@@ -55,7 +55,7 @@ where
     /// let span = spanner.enter_span("test");
     /// ```
     pub fn enter_span(&self, name: &str) -> Span<T> {
-        Span::enter(&self, name)
+        Span::enter(self, name)
     }
 
     /// Sets a custom configuration for the spanner.
