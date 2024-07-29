@@ -1,12 +1,15 @@
 use core::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use crate::config::Config;
+
 pub struct Spanner<T>
 where
     T: std::io::Write,
 {
     writer: RefCell<T>,
     depth: AtomicUsize,
+    config: Config,
 }
 
 impl<T> Spanner<T>
@@ -17,11 +20,20 @@ where
         Self {
             writer: RefCell::new(writer),
             depth: AtomicUsize::new(0),
+            config: Config::default(),
         }
     }
 
     pub fn enter_span(&self, name: &str) -> Span<T> {
         Span::enter(&self, name)
+    }
+
+    pub fn with_config(self, cfg: Config) -> Self {
+        Self {
+            writer: self.writer,
+            depth: self.depth,
+            config: cfg,
+        }
     }
 }
 
@@ -36,6 +48,7 @@ impl VecSpanner {
         Self {
             writer: RefCell::new(vec),
             depth: AtomicUsize::new(0),
+            config: Config::default(),
         }
     }
 }
@@ -45,6 +58,7 @@ impl Default for VecSpanner {
         Self {
             writer: RefCell::new(Vec::new()),
             depth: AtomicUsize::new(0),
+            config: Config::default(),
         }
     }
 }
@@ -56,6 +70,7 @@ impl FileSpanner {
         Self {
             writer: RefCell::new(file),
             depth: AtomicUsize::new(0),
+            config: Config::default(),
         }
     }
 }
@@ -73,6 +88,7 @@ impl Default for StdoutSpanner {
         Self {
             writer: RefCell::new(std::io::stdout()),
             depth: AtomicUsize::new(0),
+            config: Config::default(),
         }
     }
 }
@@ -91,7 +107,8 @@ where
 {
     pub fn enter(parent: &'a Spanner<T>, name: &str) -> Self {
         let prev_depth = parent.depth.fetch_add(1, Ordering::Relaxed);
-        let (enter_message, drop_message) = Self::generate_messages(name, prev_depth);
+        let (enter_message, drop_message) =
+            Self::generate_messages(name, prev_depth, &parent.config);
 
         let _ = parent.writer.borrow_mut().write(enter_message.as_ref());
         Self {
@@ -100,8 +117,14 @@ where
         }
     }
 
-    fn generate_messages(name: &str, depth: usize) -> (String, String) {
-        let spaces: String = (0..depth).map(|_| ' ').collect();
+    fn generate_messages(name: &str, depth: usize, cfg: &Config) -> (String, String) {
+        let spaces: String =
+            (0..depth).fold(String::with_capacity(depth * cfg.tabwidth), |mut acc, _| {
+                for _ in 0..cfg.tabwidth {
+                    acc.push(' ')
+                }
+                acc
+            });
         let enter_message = format!("{}{} entered\n", spaces, name);
         let drop_message = format!("{}{} dropped\n", spaces, name);
         (enter_message, drop_message)
@@ -149,16 +172,16 @@ mod tests {
         };
 
         let expected = r#"Span(0) entered
- Span(1) entered
-  Span(2) entered
-   Span(3) entered
-    Span(4) entered
-     Span(5) entered
-     Span(5) dropped
-    Span(4) dropped
-   Span(3) dropped
-  Span(2) dropped
- Span(1) dropped
+  Span(1) entered
+    Span(2) entered
+      Span(3) entered
+        Span(4) entered
+          Span(5) entered
+          Span(5) dropped
+        Span(4) dropped
+      Span(3) dropped
+    Span(2) dropped
+  Span(1) dropped
 Span(0) dropped
 "#;
 
