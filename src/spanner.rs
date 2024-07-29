@@ -118,15 +118,34 @@ where
     }
 
     fn generate_messages(name: &str, depth: usize, cfg: &Config) -> (String, String) {
-        let spaces: String =
-            (0..depth).fold(String::with_capacity(depth * cfg.tabwidth), |mut acc, _| {
-                for _ in 0..cfg.tabwidth {
+        let spaces: String = (0..depth).enumerate().fold(
+            String::with_capacity(depth * cfg.tabwidth),
+            |mut acc, (i, _)| {
+                let is_displayed = i % cfg.skip == 0;
+                if is_displayed {
+                    acc.push((cfg.depthmap)(i));
+                } else {
+                    acc.push(' ');
+                }
+                for _ in 0..cfg.tabwidth.saturating_sub(1) {
                     acc.push(' ')
                 }
                 acc
-            });
-        let enter_message = format!("{}{} entered\n", spaces, name);
-        let drop_message = format!("{}{} dropped\n", spaces, name);
+            },
+        );
+        let is_displayed = depth % cfg.skip == 0;
+        let enter_message = format!(
+            "{}{}{} entered\n",
+            spaces,
+            if is_displayed { '┌' } else { ' ' },
+            name
+        );
+        let drop_message = format!(
+            "{}{}{} dropped\n",
+            spaces,
+            if is_displayed { '└' } else { ' ' },
+            name
+        );
         (enter_message, drop_message)
     }
 }
@@ -171,24 +190,47 @@ mod tests {
             spanner: VecSpanner::new(),
         };
 
-        let expected = r#"Span(0) entered
-  Span(1) entered
-    Span(2) entered
-      Span(3) entered
-        Span(4) entered
-          Span(5) entered
-          Span(5) dropped
-        Span(4) dropped
-      Span(3) dropped
-    Span(2) dropped
-  Span(1) dropped
-Span(0) dropped
+        let expected = r#"┌Span(0) entered
+|  Span(1) entered
+|   ┌Span(2) entered
+|   ┆  Span(3) entered
+|   ┆   ┌Span(4) entered
+|   ┆   |  Span(5) entered
+|   ┆   |  Span(5) dropped
+|   ┆   └Span(4) dropped
+|   ┆  Span(3) dropped
+|   └Span(2) dropped
+|  Span(1) dropped
+└Span(0) dropped
 "#;
 
         helper.helper(0, 5);
-        assert_eq!(
-            expected.bytes().collect::<Vec<_>>(),
-            helper.spanner.writer.into_inner()
-        )
+        let vec = helper.spanner.writer.into_inner();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
+    }
+
+    #[test]
+    fn test_config() {
+        let helper = Helper {
+            spanner: VecSpanner::new().with_config(Config::new().with_skip(3)),
+        };
+
+        let expected = r#"┌Span(0) entered
+|  Span(1) entered
+|    Span(2) entered
+|     ┌Span(3) entered
+|     ┊  Span(4) entered
+|     ┊    Span(5) entered
+|     ┊    Span(5) dropped
+|     ┊  Span(4) dropped
+|     └Span(3) dropped
+|    Span(2) dropped
+|  Span(1) dropped
+└Span(0) dropped
+"#;
+
+        helper.helper(0, 5);
+        let vec = helper.spanner.writer.into_inner();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
     }
 }
