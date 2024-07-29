@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::config::Config;
 
 /// A structure that generates spans and keeps track of the span depth.
+#[derive(Debug)]
 pub struct Spanner<T>
 where
     T: std::io::Write,
@@ -168,6 +169,7 @@ impl Default for StdoutSpanner {
 /// The `Span` structure works in tandem with a `Spanner` instance, which maintains the
 /// configuration and depth state. Each span generates formatted messages based on the
 /// current depth and configuration, which are written to the provided writer.
+#[derive(Clone, Debug)]
 pub struct Span<'a, T>
 where
     T: std::io::Write,

@@ -1,6 +1,7 @@
 //! Configuration for span generators
 
 /// Config that determines the ouput of the span generator
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Config<T = fn(usize) -> char>
 where
     T: Fn(usize) -> char,
