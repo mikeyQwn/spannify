@@ -1,5 +1,9 @@
 # Spannify
 
+[![Build status][actions-badge]][actions-url]
+
+[actions-badge]: https://github.com/mikeyQwn/spannify/actions/workflows/ci.yml/badge.svg
+
 A tiny rust crate that produces nice-looking graphs for you to visualize your callstack
 
 ### Example
