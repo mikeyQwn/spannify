@@ -32,24 +32,24 @@ A tiny rust crate that produces nice-looking graphs for you to visualize your ca
 ### Output
 
 ```text
-┌fib(5) entered
-|  fib(4) entered
-|   ┌fib(3) entered
-|   ┆  fib(2) entered
-|   ┆  fib(2) dropped
-|   ┆  fib(1) entered
-|   ┆  fib(1) dropped
-|   └fib(3) dropped
-|   ┌fib(2) entered
-|   └fib(2) dropped
-|  fib(4) dropped
-|  fib(3) entered
-|   ┌fib(2) entered
-|   └fib(2) dropped
-|   ┌fib(1) entered
-|   └fib(1) dropped
-|  fib(3) dropped
-└fib(5) dropped
+┌fib(5)
+|  fib(4)
+|   ┌fib(3)
+|   ┆  fib(2)
+|   ┆  fib(2)
+|   ┆  fib(1)
+|   ┆  fib(1)
+|   └fib(3)
+|   ┌fib(2)
+|   └fib(2)
+|  fib(4)
+|  fib(3)
+|   ┌fib(2)
+|   └fib(2)
+|   ┌fib(1)
+|   └fib(1)
+|  fib(3)
+└fib(5)
 ```
 
 ### Documentation

@@ -89,7 +89,7 @@ where
     ///     .with_config(Config::new().with_skip(3).with_level(Level::Debug));
     /// {
     ///     let _span = spanner.enter_span("foo");
-    ///     // Span is dropped here
+    ///     // Span is here
     /// }
     /// assert_eq!(inner, Rc::new(RefCell::new(Vec::new())));
     /// ```
@@ -279,13 +279,13 @@ where
         );
         let is_displayed = depth % cfg.skip == 0;
         let enter_message = format!(
-            "{}{}{} entered\n",
+            "{}{}{}\n",
             spaces,
             if is_displayed { '┌' } else { ' ' },
             name
         );
         let drop_message = format!(
-            "{}{}{} dropped\n",
+            "{}{}{}\n",
             spaces,
             if is_displayed { '└' } else { ' ' },
             name
@@ -345,18 +345,18 @@ mod tests {
             spanner: VecSpanner::new(),
         };
 
-        let expected = r#"┌Span(0) entered
-|  Span(1) entered
-|   ┌Span(2) entered
-|   ┆  Span(3) entered
-|   ┆   ┌Span(4) entered
-|   ┆   |  Span(5) entered
-|   ┆   |  Span(5) dropped
-|   ┆   └Span(4) dropped
-|   ┆  Span(3) dropped
-|   └Span(2) dropped
-|  Span(1) dropped
-└Span(0) dropped
+        let expected = r#"┌Span(0)
+|  Span(1)
+|   ┌Span(2)
+|   ┆  Span(3)
+|   ┆   ┌Span(4)
+|   ┆   |  Span(5)
+|   ┆   |  Span(5)
+|   ┆   └Span(4)
+|   ┆  Span(3)
+|   └Span(2)
+|  Span(1)
+└Span(0)
 "#;
 
         helper.helper(0, 5);
@@ -370,18 +370,18 @@ mod tests {
             spanner: VecSpanner::new().with_config(Config::new().with_skip(3)),
         };
 
-        let expected = r#"┌Span(0) entered
-|  Span(1) entered
-|    Span(2) entered
-|     ┌Span(3) entered
-|     ┊  Span(4) entered
-|     ┊    Span(5) entered
-|     ┊    Span(5) dropped
-|     ┊  Span(4) dropped
-|     └Span(3) dropped
-|    Span(2) dropped
-|  Span(1) dropped
-└Span(0) dropped
+        let expected = r#"┌Span(0)
+|  Span(1)
+|    Span(2)
+|     ┌Span(3)
+|     ┊  Span(4)
+|     ┊    Span(5)
+|     ┊    Span(5)
+|     ┊  Span(4)
+|     └Span(3)
+|    Span(2)
+|  Span(1)
+└Span(0)
 "#;
 
         helper.helper(0, 5);
