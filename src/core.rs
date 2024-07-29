@@ -3,8 +3,8 @@
 //! This module provides functionality for generating spans and keeping track of the span depth.
 //! It includes the `Spanner` struct for managing span creation and the `Span` struct for representing individual spans.
 
-use core::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 
 use crate::config::Config;
 
@@ -14,7 +14,7 @@ pub struct Spanner<T>
 where
     T: std::io::Write,
 {
-    writer: RefCell<T>,
+    writer: Mutex<T>,
     depth: AtomicUsize,
     config: Config,
 }
@@ -36,7 +36,7 @@ where
     /// ```
     pub fn from_writer(writer: T) -> Self {
         Self {
-            writer: RefCell::new(writer),
+            writer: Mutex::new(writer),
             depth: AtomicUsize::new(0),
             config: Config::default(),
         }
@@ -100,7 +100,7 @@ impl VecSpanner {
     /// ```
     pub fn from_vec(vec: Vec<u8>) -> Self {
         Self {
-            writer: RefCell::new(vec),
+            writer: Mutex::new(vec),
             depth: AtomicUsize::new(0),
             config: Config::default(),
         }
@@ -110,7 +110,7 @@ impl VecSpanner {
 impl Default for VecSpanner {
     fn default() -> Self {
         Self {
-            writer: RefCell::new(Vec::new()),
+            writer: Mutex::new(Vec::new()),
             depth: AtomicUsize::new(0),
             config: Config::default(),
         }
@@ -135,7 +135,7 @@ impl FileSpanner {
     /// ```
     pub fn new(file: std::fs::File) -> Self {
         Self {
-            writer: RefCell::new(file),
+            writer: Mutex::new(file),
             depth: AtomicUsize::new(0),
             config: Config::default(),
         }
@@ -155,7 +155,7 @@ impl StdoutSpanner {
 impl Default for StdoutSpanner {
     fn default() -> Self {
         Self {
-            writer: RefCell::new(std::io::stdout()),
+            writer: Mutex::new(std::io::stdout()),
             depth: AtomicUsize::new(0),
             config: Config::default(),
         }
@@ -195,7 +195,9 @@ where
         let (enter_message, drop_message) =
             Self::generate_messages(name, prev_depth, &parent.config);
 
-        let _ = parent.writer.borrow_mut().write(enter_message.as_ref());
+        if let Ok(mut writer) = parent.writer.lock() {
+            let _ = writer.write(enter_message.as_ref());
+        }
         Self {
             parent,
             drop_message,
@@ -251,11 +253,10 @@ where
     /// Writes the drop message to the writer and decrements the parent's depth.
     fn drop(&mut self) {
         let _ = self.parent.depth.fetch_sub(1, Ordering::Relaxed);
-        let _ = self
-            .parent
-            .writer
-            .borrow_mut()
-            .write(self.drop_message.as_ref());
+
+        if let Ok(mut writer) = self.parent.writer.lock() {
+            let _ = writer.write(self.drop_message.as_ref());
+        }
     }
 }
 
@@ -300,7 +301,7 @@ mod tests {
 "#;
 
         helper.helper(0, 5);
-        let vec = helper.spanner.writer.into_inner();
+        let vec = helper.spanner.writer.into_inner().unwrap();
         assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
     }
 
@@ -325,7 +326,7 @@ mod tests {
 "#;
 
         helper.helper(0, 5);
-        let vec = helper.spanner.writer.into_inner();
+        let vec = helper.spanner.writer.into_inner().unwrap();
         assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
     }
 }
