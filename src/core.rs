@@ -133,7 +133,7 @@ impl FileSpanner {
     /// ```
     /// use spannify::core::FileSpanner;
     ///
-    /// let file = std::fs::File::create("output.txt").unwrap();
+    /// let file = std::fs::File::create("/tmp/output.txt").unwrap();
     /// let spanner = FileSpanner::new(file);
     /// ```
     #[must_use]
