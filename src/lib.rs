@@ -111,7 +111,9 @@
 //!
 //! ## Contributing
 //!
-//! Contributions are welcome! Please open an issue or submit a pull request on
+//! Contributions are welcome! Please open an issue or submit a pull request
+
+#![doc(html_root_url = "https://docs.rs/spanner/latest")]
 
 pub mod config;
 pub mod core;
