@@ -1,6 +1,6 @@
 # Spannify
 
-[![Build status][actions-badge]][actions-url]
+![Build status][actions-badge]
 
 [actions-badge]: https://github.com/mikeyQwn/spannify/actions/workflows/ci.yml/badge.svg
 
