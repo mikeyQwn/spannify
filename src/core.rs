@@ -1,8 +1,14 @@
+//! Span and span generators
+//!
+//! This module provides functionality for generating spans and keeping track of the span depth.
+//! It includes the `Spanner` struct for managing span creation and the `Span` struct for representing individual spans.
+
 use core::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::config::Config;
 
+/// A structure that generates spans and keeps track of the span depth.
 pub struct Spanner<T>
 where
     T: std::io::Write,
@@ -16,6 +22,17 @@ impl<T> Spanner<T>
 where
     T: std::io::Write,
 {
+    /// Creates a new `Spanner` instance from a writer.
+    ///
+    /// # Parameters
+    /// - `writer`: The writer to which the spans will be written.
+    ///
+    /// # Examples
+    /// ```
+    /// use spanner::core::Spanner;
+    ///
+    /// let spanner = Spanner::from_writer(Vec::new());
+    /// ```
     pub fn from_writer(writer: T) -> Self {
         Self {
             writer: RefCell::new(writer),
@@ -24,10 +41,33 @@ where
         }
     }
 
+    /// Enters a span, increasing the depth and writing the span's enter message.
+    ///
+    /// # Parameters
+    /// - `name`: The name of the span. It is displayed is span's enter and exit message
+    ///
+    /// # Examples
+    /// ```
+    /// use spanner::core::Spanner;
+    ///
+    /// let spanner = Spanner::from_writer(Vec::new());
+    /// let span = spanner.enter_span("test");
+    /// ```
     pub fn enter_span(&self, name: &str) -> Span<T> {
         Span::enter(&self, name)
     }
 
+    /// Sets a custom configuration for the spanner.
+    ///
+    /// # Parameters
+    /// - `cfg`: The new configuration to use.
+    ///
+    /// # Examples
+    /// ```
+    /// use spanner::{config::Config, core::Spanner};
+    ///
+    /// let spanner = Spanner::from_writer(Vec::new()).with_config(Config::new().with_skip(3));
+    /// ```
     pub fn with_config(self, cfg: Config) -> Self {
         Self {
             writer: self.writer,
@@ -37,13 +77,26 @@ where
     }
 }
 
+/// A Spanner that writes to the Vec of bytes.
 pub type VecSpanner = Spanner<Vec<u8>>;
 
 impl VecSpanner {
+    /// Creates a `VecSpanner` instance with default values.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates a new `VecSpanner` from an existing vector.
+    ///
+    /// # Parameters
+    /// - `vec`: The vector to use as the writer.
+    ///
+    /// # Examples
+    /// ```
+    /// use spanner::core::VecSpanner;
+    ///
+    /// let spanner = VecSpanner::from_vec(Vec::new());
+    /// ```
     pub fn from_vec(vec: Vec<u8>) -> Self {
         Self {
             writer: RefCell::new(vec),
@@ -63,9 +116,22 @@ impl Default for VecSpanner {
     }
 }
 
+/// A Spanner that writes to a File
 pub type FileSpanner = Spanner<std::fs::File>;
 
 impl FileSpanner {
+    /// Creates a new `FileSpanner` from an existing file.
+    ///
+    /// # Parameters
+    /// - `file`: The file to use as the writer.
+    ///
+    /// # Examples
+    /// ```
+    /// use spanner::core::FileSpanner;
+    ///
+    /// let file = std::fs::File::create("output.txt").unwrap();
+    /// let spanner = FileSpanner::new(file);
+    /// ```
     pub fn new(file: std::fs::File) -> Self {
         Self {
             writer: RefCell::new(file),
@@ -75,9 +141,11 @@ impl FileSpanner {
     }
 }
 
+/// A Spanner that writes to the standard out.
 pub type StdoutSpanner = Spanner<std::io::Stdout>;
 
 impl StdoutSpanner {
+    /// Creates a `StdoutSpanner` instance with default values.
     pub fn new() -> Self {
         Self::default()
     }
@@ -93,6 +161,13 @@ impl Default for StdoutSpanner {
     }
 }
 
+/// A `Span` represents a hierarchical structure for tracking and displaying the entry and
+/// exit of various sections of code. It uses a provided writer to output messages on entering
+/// and dropping spans, facilitating visual traceability of the execution flow.
+///
+/// The `Span` structure works in tandem with a `Spanner` instance, which maintains the
+/// configuration and depth state. Each span generates formatted messages based on the
+/// current depth and configuration, which are written to the provided writer.
 pub struct Span<'a, T>
 where
     T: std::io::Write,
@@ -105,7 +180,15 @@ impl<'a, T> Span<'a, T>
 where
     T: std::io::Write,
 {
-    pub fn enter(parent: &'a Spanner<T>, name: &str) -> Self {
+    /// Creates a new `Span` for a given `parent` `Spanner` and a span `name`. This method
+    /// increases the depth of the parent spanner, generates entry and drop messages, writes
+    /// the entry message to the writer, and returns the new `Span` instance.
+    ///
+    /// # Parameters
+    ///
+    /// - `parent`: A reference to the `Spanner` instance managing the configuration and depth.
+    /// - `name`: The name of the span, which will be included in the messages.
+    fn enter(parent: &'a Spanner<T>, name: &str) -> Self {
         let prev_depth = parent.depth.fetch_add(1, Ordering::Relaxed);
         let (enter_message, drop_message) =
             Self::generate_messages(name, prev_depth, &parent.config);
@@ -116,7 +199,14 @@ where
             drop_message,
         }
     }
-
+    /// Generates the entry and drop messages for a span based on its name, depth, and configuration.
+    ///
+    /// # Parameters
+    ///
+    /// - `name`: The name of the span.
+    /// - `depth`: The current depth of the span.
+    /// - `cfg`: The configuration for formatting the messages.
+    ///
     fn generate_messages(name: &str, depth: usize, cfg: &Config) -> (String, String) {
         let spaces: String = (0..depth).enumerate().fold(
             String::with_capacity(depth * cfg.tabwidth),
@@ -150,10 +240,13 @@ where
     }
 }
 
+/// Implements the `Drop` trait for the `Span` struct, ensuring that the drop message is
+/// written to the writer and the parent's depth is decremented when the span goes out of scope.
 impl<'a, T> Drop for Span<'a, T>
 where
     T: std::io::Write,
 {
+    /// Writes the drop message to the writer and decrements the parent's depth.
     fn drop(&mut self) {
         let _ = self.parent.depth.fetch_sub(1, Ordering::Relaxed);
         let _ = self
