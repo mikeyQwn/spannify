@@ -1,8 +1,14 @@
 # Spannify
 
-![Build status][actions-badge]
+[![Build status][actions-badge]][actions]
+[![Crates.io][version-badge]][crates.io]
+![License][license-badge]
 
 [actions-badge]: https://github.com/mikeyQwn/spannify/actions/workflows/ci.yml/badge.svg
+[actions]: https://github.com/mikeyQwn/spannify/actions?query=branch%3Amaster
+[version-badge]: https://img.shields.io/crates/v/spannify.svg
+[crates.io]: https://crates.io/crates/spannify
+[license-badge]: https://img.shields.io/github/license/mikeyQwn/spannify.svg
 
 A tiny rust crate that produces nice-looking graphs for you to visualize your callstack
 
