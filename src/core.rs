@@ -265,7 +265,10 @@ where
         let spaces: String = (0..depth).enumerate().fold(
             String::with_capacity(depth * cfg.tabwidth),
             |mut acc, (i, _)| {
-                let is_displayed = i % cfg.skip == 0;
+                let is_displayed = match cfg.skip {
+                    0 => false,
+                    _ => i % cfg.skip == 0,
+                };
                 if is_displayed {
                     acc.push((cfg.depthmap)(i));
                 } else {
@@ -277,7 +280,11 @@ where
                 acc
             },
         );
-        let is_displayed = depth % cfg.skip == 0;
+        let is_displayed = match cfg.skip {
+            0 => false,
+            _ => depth % cfg.skip == 0,
+        };
+
         let enter_message = format!(
             "{}{}{}\n",
             spaces,
@@ -415,5 +422,30 @@ mod tests {
         }
 
         assert_eq!(inner, Rc::new(RefCell::new(Vec::new())));
+    }
+
+    #[test]
+    fn test_skip() {
+        let helper = Helper {
+            spanner: VecSpanner::new().with_config(Config::new().with_skip(0)),
+        };
+
+        let expected = r#" Span(0)
+   Span(1)
+     Span(2)
+       Span(3)
+         Span(4)
+           Span(5)
+           Span(5)
+         Span(4)
+       Span(3)
+     Span(2)
+   Span(1)
+ Span(0)
+"#;
+
+        helper.helper(0, 5);
+        let vec = helper.spanner.writer.into_inner().unwrap();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
     }
 }

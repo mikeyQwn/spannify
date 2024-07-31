@@ -10,7 +10,7 @@ where
 {
     /// Determines how many spaces is added per depth. Default is `2`.
     pub tabwidth: usize,
-    /// Determines the frequency of vertical bars. `skip: 2` means a bar is placed every 2 spans. Default is `2`.
+    /// Determines the frequency of vertical bars. `skip: 2` means a bar is placed every 2 spans. The skip value of 0 means that no bars are displayed. Default is `2`.
     pub skip: usize,
     /// Function that maps the depth of a span to a vertical bar character.
     pub depthmap: T,
