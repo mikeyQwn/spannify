@@ -47,7 +47,7 @@ where
 
         while self.peek_token.is_some() && precedence < self.peek_token.unwrap().precedence() {
             left = match self.peek_token {
-                Some(Token::Add) | Some(Token::Sub) | Some(Token::Div) | Some(Token::Mul) => {
+                Some(Token::Add | Token::Sub | Token::Div | Token::Mul) => {
                     self.advance_tokens();
                     self.parse_infix_expression(left)
                 }
@@ -74,7 +74,7 @@ where
 
         self.advance_tokens();
 
-        return expr;
+        expr
     }
 
     fn advance_tokens(&mut self) {
@@ -144,16 +144,14 @@ impl Token {
 
     fn precedence(&self) -> Precedence {
         match self {
-            Self::Add => Precedence::Sum,
-            Self::Sub => Precedence::Sum,
-            Self::Div => Precedence::Product,
-            Self::Mul => Precedence::Product,
+            Self::Add | Self::Sub => Precedence::Sum,
+            Self::Div | Self::Mul => Precedence::Product,
             _ => Precedence::Lowest,
         }
     }
 }
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, PartialOrd, Clone, Copy)]
 pub enum Precedence {
     Lowest,
     Sum,

@@ -5,7 +5,7 @@ static SPANNER: Lazy<StdoutSpanner> =
     Lazy::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
 
 fn fib(n: usize) -> usize {
-    let _span = SPANNER.enter_span(format!("fib({})", n).as_ref());
+    let _span = SPANNER.enter_span(format!("fib({n})").as_ref());
     match n {
         0 => 0,
         1 | 2 => 1,
