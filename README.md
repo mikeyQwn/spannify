@@ -61,3 +61,4 @@ fn main() {
 ### Documentation
 
 Check out the full documentation at [docs.rs](https://docs.rs/spannify/latest/spannify/)
+Or take a look at the examples in `examples`
