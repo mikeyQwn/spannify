@@ -320,6 +320,57 @@ where
     }
 }
 
+/// Creates a new span with a given spanner.
+///
+/// This macro is used to create and enter a new span.
+/// You can specify the level of span if needed.
+///
+/// # Examples
+///
+/// ```rust
+/// use spannify::{spf, level::Level, core::StdoutSpanner};
+///
+/// let my_spanner = StdoutSpanner::new();
+///
+/// let timestamp = "12:21";
+///
+/// // Creates a span with a level and literal message
+/// spf!(my_spanner, Level::Info => "Starting process");
+///
+/// // Creates a span with a literal message
+/// spf!(my_spanner => "Starting process");
+///
+/// // Example of creating a span with a formatted message
+/// spf!(my_spanner, "Starting process at {}", timestamp);
+/// // Or
+/// spf!(my_spanner, "Starting process at {timestamp}");
+///
+/// // Example of creating a span with a level and formatted message
+/// spf!(my_spanner, Level::Info, "Starting process at {}", timestamp);
+///
+#[macro_export]
+macro_rules! spf {
+    ($spa:expr, $level:path => $arg:literal) => {{
+        let span = $spa.enter_with_level($level, $arg);
+        span
+    }};
+
+    ($spa:expr => $arg:literal) => {{
+        let span = $spa.enter_span($arg);
+        span
+    }};
+
+    ($spa:expr, $level:path, $($arg:tt)*) => {{
+        let span = $spa.enter_with_level($level, format!($($arg)*).as_ref());
+        span
+    }};
+
+    ($spa:expr, $($arg:tt)*) => {{
+        let span = $spa.enter_span(format!($($arg)*).as_ref());
+        span
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -344,6 +395,42 @@ mod tests {
             }
             return self.helper(current_depth + 1, target_depth);
         }
+
+        fn helper_macro(&self, current_depth: usize, target_depth: usize) {
+            let _span = spf!(self.spanner, "Span({current_depth})");
+
+            if current_depth >= target_depth {
+                return;
+            }
+            return self.helper_macro(current_depth + 1, target_depth);
+        }
+
+        fn helper_macro_2(&self, current_depth: usize, target_depth: usize) {
+            let _span = spf!(self.spanner, Level::Info, "Span({current_depth})");
+
+            if current_depth >= target_depth {
+                return;
+            }
+            return self.helper_macro_2(current_depth + 1, target_depth);
+        }
+
+        fn helper_macro_3(&self, current_depth: usize, target_depth: usize) {
+            let _span = spf!(self.spanner => "Span({current_depth})");
+
+            if current_depth >= target_depth {
+                return;
+            }
+            return self.helper_macro_3(current_depth + 1, target_depth);
+        }
+
+        fn helper_macro_4(&self, current_depth: usize, target_depth: usize) {
+            let _span = spf!(self.spanner, "Span({})", current_depth);
+
+            if current_depth >= target_depth {
+                return;
+            }
+            return self.helper_macro_2(current_depth + 1, target_depth);
+        }
     }
 
     #[test]
@@ -367,6 +454,13 @@ mod tests {
 "#;
 
         helper.helper(0, 5);
+        let vec = helper.spanner.writer.into_inner().unwrap();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec);
+
+        let helper = Helper {
+            spanner: VecSpanner::new(),
+        };
+        helper.helper_macro(0, 5);
         let vec = helper.spanner.writer.into_inner().unwrap();
         assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
     }
@@ -447,5 +541,63 @@ mod tests {
         helper.helper(0, 5);
         let vec = helper.spanner.writer.into_inner().unwrap();
         assert_eq!(expected.bytes().collect::<Vec<_>>(), vec)
+    }
+
+    #[test]
+    fn it_works_macros() {
+        let expected = r#"┌Span(0)
+|  Span(1)
+|   ┌Span(2)
+|   ┆  Span(3)
+|   ┆   ┌Span(4)
+|   ┆   |  Span(5)
+|   ┆   |  Span(5)
+|   ┆   └Span(4)
+|   ┆  Span(3)
+|   └Span(2)
+|  Span(1)
+└Span(0)
+"#;
+        let expected_3 = r#"┌Span({current_depth})
+|  Span({current_depth})
+|   ┌Span({current_depth})
+|   ┆  Span({current_depth})
+|   ┆   ┌Span({current_depth})
+|   ┆   |  Span({current_depth})
+|   ┆   |  Span({current_depth})
+|   ┆   └Span({current_depth})
+|   ┆  Span({current_depth})
+|   └Span({current_depth})
+|  Span({current_depth})
+└Span({current_depth})
+"#;
+
+        let helper = Helper {
+            spanner: VecSpanner::new(),
+        };
+        helper.helper_macro(0, 5);
+        let vec = helper.spanner.writer.into_inner().unwrap();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec);
+
+        let helper = Helper {
+            spanner: VecSpanner::new(),
+        };
+        helper.helper_macro_2(0, 5);
+        let vec = helper.spanner.writer.into_inner().unwrap();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec);
+
+        let helper = Helper {
+            spanner: VecSpanner::new(),
+        };
+        helper.helper_macro_3(0, 5);
+        let vec = helper.spanner.writer.into_inner().unwrap();
+        assert_eq!(expected_3.bytes().collect::<Vec<_>>(), vec);
+
+        let helper = Helper {
+            spanner: VecSpanner::new(),
+        };
+        helper.helper_macro_4(0, 5);
+        let vec = helper.spanner.writer.into_inner().unwrap();
+        assert_eq!(expected.bytes().collect::<Vec<_>>(), vec);
     }
 }

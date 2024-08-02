@@ -3,6 +3,7 @@ use core::panic;
 use once_cell::sync::Lazy;
 use spannify::config::Config;
 use spannify::core::StdoutSpanner;
+use spannify::spf;
 
 static SPANNER: Lazy<StdoutSpanner> =
     Lazy::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
@@ -31,12 +32,10 @@ where
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Expression {
-        let _span = SPANNER.enter_span(
-            format!(
-                "parse_expression: current=`{:?}`",
-                self.current_token.unwrap()
-            )
-            .as_ref(),
+        let _span = spf!(
+            SPANNER,
+            "parse_expression: current=`{:?}`",
+            self.current_token.unwrap()
         );
 
         let mut left = match self.current_token {
@@ -61,12 +60,10 @@ where
     }
 
     fn parse_grouped_expression(&mut self) -> Expression {
-        let _span = SPANNER.enter_span(
-            format!(
-                "parse_grouped_expression: current=`{:?}`",
-                self.current_token.unwrap()
-            )
-            .as_ref(),
+        let _span = spf!(
+            SPANNER,
+            "parse_grouped_expression: current=`{:?}`",
+            self.current_token.unwrap(),
         );
         self.advance_tokens();
 
@@ -78,12 +75,10 @@ where
     }
 
     fn advance_tokens(&mut self) {
-        let _span = SPANNER.enter_span(
-            format!(
-                "advance_tokens: current=`{:?}`",
-                self.current_token.unwrap()
-            )
-            .as_ref(),
+        let _span = spf!(
+            SPANNER,
+            "advance_tokens: current=`{:?}`",
+            self.current_token.unwrap(),
         );
 
         std::mem::swap(&mut self.current_token, &mut self.peek_token);
@@ -91,12 +86,10 @@ where
     }
 
     fn parse_infix_expression(&mut self, left: Expression) -> Expression {
-        let _span = SPANNER.enter_span(
-            format!(
-                "parse_infix_expression: current=`{:?}`",
-                self.current_token.unwrap()
-            )
-            .as_ref(),
+        let _span = spf!(
+            SPANNER,
+            "parse_infix_expression: current=`{:?}`",
+            self.current_token.unwrap()
         );
 
         let token = self.current_token;
