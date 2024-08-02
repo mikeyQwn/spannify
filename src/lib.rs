@@ -17,8 +17,7 @@
 //!   and behavior of the callstack visualization.
 //! - [`core`]: Contains the core functionality for managing spans, generating messages, and
 //!   handling the callstack visualization logic.
-//! - [`level`]: Contains the levels of spans, which determines if the span should be outputted or
-//! not
+//! - [`level`]: Contains the levels of spans, which determines if the span should be outputted or not
 //!
 //! ## Example
 //!
