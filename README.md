@@ -16,13 +16,13 @@ A tiny rust crate that produces nice-looking graphs for you to visualize your ca
 
 ```rust
 use once_cell::sync::Lazy;
-use spannify::{config::Config, core::StdoutSpanner};
+use spannify::{config::Config, core::StdoutSpanner, spf};
 
 static SPANNER: Lazy<StdoutSpanner> =
     Lazy::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
 
 fn fib(n: usize) -> usize {
-    let _span = SPANNER.enter_span(format!("fib({n})").as_ref());
+    let _span = spf!(SPANNER, "fib({n})");
     match n {
         0 => 0,
         1 | 2 => 1,
