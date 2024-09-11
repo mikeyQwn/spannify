@@ -103,7 +103,8 @@ impl Default for Config {
 /// Default function that maps depth to a vertical bar character.
 ///
 /// Cycles through the characters `['|', '¦', '┆', '┊']` based on depth.
-fn default_depthmap(depth: usize) -> char {
+const fn default_depthmap(depth: usize) -> char {
+    /// A list of vertical bars that we cycle through by default
     const DEPTHMAP: [char; 4] = ['|', '¦', '┆', '┊'];
     DEPTHMAP[depth % DEPTHMAP.len()]
 }

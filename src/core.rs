@@ -206,7 +206,9 @@ impl Default for StdoutSpanner {
 }
 
 /// A `Span` represents a hierarchical structure for tracking and displaying the entry and
-/// exit of various sections of code. It uses a provided writer to output messages on entering
+/// exit of various sections of code.
+///
+/// It uses a provided writer to output messages on entering
 /// and dropping spans, facilitating visual traceability of the execution flow.
 ///
 /// The `Span` structure works in tandem with a `Spanner` instance, which maintains the
