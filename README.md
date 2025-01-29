@@ -12,14 +12,26 @@
 
 A tiny rust crate that produces nice-looking graphs for you to visualize your callstack
 
+Spannify does not have _any_ dependencies
+
 ### Example
 
-```rust
-use once_cell::sync::Lazy;
-use spannify::{config::Config, core::StdoutSpanner, spf};
+Here's an example of using `spannify` to trace calls to a recursive function.
 
-static SPANNER: Lazy<StdoutSpanner> =
-    Lazy::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
+Make sure you've added `spannify` to your project:
+
+```sh
+$ cargo add spannify
+```
+
+#### main.rs contents:
+
+```rust
+use spannify::{config::Config, core::StdoutSpanner, spf};
+use std::sync::LazyLock;
+
+static SPANNER: LazyLock<StdoutSpanner> =
+    LazyLock::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
 
 fn fib(n: usize) -> usize {
     let _span = spf!(SPANNER, "fib({n})");
@@ -35,7 +47,7 @@ fn main() {
 }
 ```
 
-### Output
+#### Output
 
 ```text
 ┌fib(5)
@@ -58,7 +70,8 @@ fn main() {
 └fib(5)
 ```
 
+This and other examples can be found in the `examples` directory
+
 ### Documentation
 
 Check out the full documentation at [docs.rs](https://docs.rs/spannify/latest/spannify/)
-Or take a look at the examples in `examples`

@@ -3,6 +3,7 @@
 //! This module provides functionality for generating spans and keeping track of the span depth.
 //! It includes the `Spanner` struct for managing span creation and the `Span` struct for representing individual spans.
 
+use std::fmt::Arguments;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
@@ -10,6 +11,12 @@ use crate::config::Config;
 use crate::level::Level;
 
 /// A structure that generates spans and keeps track of the span depth.
+///
+/// Note that `Spanner` is thread-safe, not because it produces coherent traces,
+/// but to make using it as a global mutable variable less cumbersome.
+/// If you want to use `Spanner` in multithreaded environments, you should consider
+/// creating a separate instance for each thread
+
 #[derive(Debug)]
 pub struct Spanner<T>
 where
@@ -68,33 +75,34 @@ where
     ///
     /// # Examples
     /// ```
-    /// use std::cell::RefCell;
-    /// use std::rc::Rc;
-    /// use spannify::level::Level;
-    /// use spannify::config::Config;
-    /// use spannify::core::Spanner;
+    /// use spannify::{
+    ///     level::Level,
+    ///     config::Config,
+    ///     core::Spanner,
+    /// };
+    /// use std::io::Cursor;
     ///
-    /// struct Writer(Rc<RefCell<Vec<u8>>>);
-    /// impl std::io::Write for Writer {
-    ///     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-    ///         self.0.borrow_mut().write(buf)
-    ///     }
-    ///     fn flush(&mut self) -> std::io::Result<()> {
-    ///         self.0.borrow_mut().flush()
-    ///     }
-    /// }
-    /// let inner = Rc::new(RefCell::new(Vec::new()));
-    /// let writer = Writer(Rc::clone(&inner));
-    /// let spanner = Spanner::from_writer(writer)
-    ///     .with_config(Config::new().with_skip(3).with_level(Level::Debug));
+    /// let mut writer = Cursor::new(Vec::new());
+    /// let spanner = Spanner::from_writer(&mut writer)
+    ///     .with_config(Config::new().with_skip(3).with_level(Level::Info));
+    ///
     /// {
-    ///     let _span = spanner.enter_span("foo");
-    ///     // Span is here
+    ///     let _span = spanner.enter_with_level(Level::Debug, "foo");
+    ///     // Span is dropped here
     /// }
-    /// assert_eq!(inner, Rc::new(RefCell::new(Vec::new())));
+    ///
+    /// assert_eq!(writer.get_ref(), &[]);
     /// ```
     pub fn enter_with_level(&self, level: Level, name: &str) -> Span<T> {
         Span::enter(self, level, name)
+    }
+
+    /// Does the same thing as `enter_with_level`, but uses `std::fmt::Arguments` instead of `&str`
+    /// as a name to avoid allocations where possible in spf! macro.
+    ///
+    /// It is not
+    pub fn enter_args(&self, level: Level, args: Arguments) -> Span<T> {
+        Span::enter_args(self, level, args)
     }
 
     /// Sets a custom configuration for the spanner.
@@ -238,11 +246,15 @@ where
     /// - `level`: The level of the span.
     /// - `name`: The name of the span, which will be included in the messages.
     fn enter(parent: &'a Spanner<T>, level: Level, name: &str) -> Self {
+        Self::enter_args(parent, level, format_args!("{name}"))
+    }
+
+    fn enter_args(parent: &'a Spanner<T>, level: Level, args: Arguments) -> Self {
         let mut drop_message = String::new();
-        if parent.config.level >= level {
+        if parent.config.level <= level {
             let prev_depth = parent.depth.fetch_add(1, Ordering::Relaxed);
             let (enter_message, drop_msg) =
-                Self::generate_messages(name, prev_depth, &parent.config);
+                Self::generate_messages(args, prev_depth, &parent.config);
             drop_message = drop_msg;
 
             if let Ok(mut writer) = parent.writer.lock() {
@@ -263,7 +275,7 @@ where
     /// - `depth`: The current depth of the span.
     /// - `cfg`: The configuration for formatting the messages.
     ///
-    fn generate_messages(name: &str, depth: usize, cfg: &Config) -> (String, String) {
+    fn generate_messages(name: Arguments, depth: usize, cfg: &Config) -> (String, String) {
         let spaces: String = (0..depth).enumerate().fold(
             String::with_capacity(depth * cfg.tabwidth),
             |mut acc, (i, _)| {
@@ -305,7 +317,7 @@ where
 
 /// Implements the `Drop` trait for the `Span` struct, ensuring that the drop message is
 /// written to the writer and the parent's depth is decremented when the span goes out of scope.
-impl<'a, T> Drop for Span<'a, T>
+impl<T> Drop for Span<'_, T>
 where
     T: std::io::Write,
 {
@@ -363,18 +375,20 @@ macro_rules! spf {
     }};
 
     ($spa:expr, $level:path, $($arg:tt)*) => {{
-        let span = $spa.enter_with_level($level, format!($($arg)*).as_ref());
+        let span = $spa.enter_args($level, format_args!($($arg)*));
         span
     }};
 
     ($spa:expr, $($arg:tt)*) => {{
-        let span = $spa.enter_span(format!($($arg)*).as_ref());
+        let span = $spa.enter_args($crate::level::Level::Info, format_args!($($arg)*));
         span
     }};
 }
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+
     use super::*;
 
     struct Helper<T>
@@ -494,30 +508,16 @@ mod tests {
 
     #[test]
     fn test_level() {
-        use std::cell::RefCell;
-        use std::rc::Rc;
-
-        struct Writer(Rc<RefCell<Vec<u8>>>);
-        impl std::io::Write for Writer {
-            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-                self.0.borrow_mut().write(buf)
-            }
-            fn flush(&mut self) -> std::io::Result<()> {
-                self.0.borrow_mut().flush()
-            }
-        }
-        let inner = Rc::new(RefCell::new(Vec::new()));
-        let writer = Writer(Rc::clone(&inner));
-
-        let spanner = Spanner::from_writer(writer)
-            .with_config(Config::new().with_skip(3).with_level(Level::Debug));
+        let mut writer = Cursor::new(Vec::new());
+        let spanner = Spanner::from_writer(&mut writer)
+            .with_config(Config::new().with_skip(3).with_level(Level::Info));
 
         {
-            let _span = spanner.enter_span("foo");
+            let _span = spanner.enter_with_level(Level::Debug, "foo");
             // Span is dropped here
         }
 
-        assert_eq!(inner, Rc::new(RefCell::new(Vec::new())));
+        assert_eq!(writer.get_ref(), &[]);
     }
 
     #[test]

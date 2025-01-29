@@ -1,12 +1,12 @@
 use core::panic;
+use std::sync::LazyLock;
 
-use once_cell::sync::Lazy;
 use spannify::config::Config;
 use spannify::core::StdoutSpanner;
 use spannify::spf;
 
-static SPANNER: Lazy<StdoutSpanner> =
-    Lazy::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
+static SPANNER: LazyLock<StdoutSpanner> =
+    LazyLock::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
 
 struct ExpressionParser<T>
 where

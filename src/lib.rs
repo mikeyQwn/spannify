@@ -22,22 +22,24 @@
 //! ## Example
 //!
 //! ```rust
-//!  use spannify::core::StdoutSpanner;
+//! use spannify::{config::Config, core::StdoutSpanner, spf};
+//! use std::sync::LazyLock;
 //!
-//!  fn fib(s: &StdoutSpanner, x: usize) -> usize {
-//!      let _span = s.enter_span(format!("fib({x})").as_ref());
-//!      match x {
-//!          0 => 0,
-//!          1 | 2 => 1,
-//!          _ => fib(s, x - 1) + fib(s, x - 2),
-//!      }
-//!  }
+//! static SPANNER: LazyLock<StdoutSpanner> =
+//!     LazyLock::new(|| StdoutSpanner::new().with_config(Config::new().with_skip(1)));
 //!
-//!  
-//!  fn main() {
-//!      let spanner = StdoutSpanner::new();
-//!      let _ = fib(&spanner, 5);
-//!  }
+//! fn fib(n: usize) -> usize {
+//!     let _span = spf!(SPANNER, "fib({n})");
+//!     match n {
+//!         0 => 0,
+//!         1 | 2 => 1,
+//!         _ => fib(n - 1) + fib(n - 2),
+//!     }
+//! }
+//!
+//! fn main() {
+//!     fib(5);
+//! }
 //!
 //!  ```
 //! ### Output
